@@ -11,7 +11,7 @@ const GROUP_COLORS = [
  * 使用 D3.js 在 SVG 元素上渲染矩陣對比兼組織分群圖。
  */
 export function renderChart(svgEl, data, width, height) {
-  const { nodes, links } = data
+  const { nodes, links, settings = {} } = data
   const margin = { top: 40, right: 40, bottom: 40, left: 40 }
   const innerW = width - margin.left - margin.right
   const innerH = height - margin.top - margin.bottom
@@ -21,19 +21,39 @@ export function renderChart(svgEl, data, width, height) {
   svg.selectAll('*').remove()
   svg.attr('width', width).attr('height', height)
 
-  const g = svg.append('g')
+  // ─── 縮放容器（zoom 作用在這層）───
+  const zoomG = svg.append('g').attr('class', 'zoom-container')
+
+  const g = zoomG.append('g')
     .attr('transform', `translate(${margin.left},${margin.top})`)
+
+  // ─── 設定 zoom/pan 行為 ───
+  const zoom = d3.zoom()
+    .scaleExtent([0.3, 5])
+    .on('zoom', (event) => {
+      zoomG.attr('transform', event.transform)
+    })
+
+  svg.call(zoom)
+  // 雙擊重置
+  svg.on('dblclick.zoom', () => {
+    svg.transition().duration(300).call(zoom.transform, d3.zoomIdentity)
+  })
 
   // ─── 座標映射 ───
   const xExtent = d3.extent(nodes, d => +d.X)
   const yExtent = d3.extent(nodes, d => +d.Y)
 
-  const xScale = d3.scaleLinear().domain(xExtent).range([0, innerW]).nice()
-  const yScale = d3.scaleLinear().domain(yExtent).range([innerH, 0]).nice()
+  // 計算交叉點：優先用 Settings 自訂，否則預設為原點 (0, 0)
+  const xCenter = settings.XAxisCenter !== undefined ? +settings.XAxisCenter : 0
+  const yCenter = settings.YAxisCenter !== undefined ? +settings.YAxisCenter : 0
 
-  // 動態中心點（平均值）
-  const xMean = d3.mean(nodes, d => +d.X)
-  const yMean = d3.mean(nodes, d => +d.Y)
+  // 擴展 domain 確保交叉點在可見範圍內
+  const xDomain = [Math.min(xExtent[0], xCenter), Math.max(xExtent[1], xCenter)]
+  const yDomain = [Math.min(yExtent[0], yCenter), Math.max(yExtent[1], yCenter)]
+
+  const xScale = d3.scaleLinear().domain(xDomain).range([0, innerW]).nice()
+  const yScale = d3.scaleLinear().domain(yDomain).range([innerH, 0]).nice()
 
   // 節點大小映射（面積比例）
   const sizeExtent = d3.extent(nodes, d => +d.Size)
@@ -43,20 +63,107 @@ export function renderChart(svgEl, data, width, height) {
   const groups = [...new Set(nodes.map(d => d.Group))]
   const colorScale = d3.scaleOrdinal().domain(groups).range(GROUP_COLORS)
 
-  // ─── 座標軸（交會於動態中心點）───
-  const axisGroup = g.append('g').attr('class', 'axes')
+  // ─── 座標軸（永遠渲染，預設隱藏，由外部 CSS toggle）───
+  const axisGroup = g.append('g')
+    .attr('class', 'axes-layer')
+    .attr('display', 'none')  // 預設隱藏
 
-  // 垂直軸線（通過 xMean）
-  axisGroup.append('line')
-    .attr('x1', xScale(xMean)).attr('y1', 0)
-    .attr('x2', xScale(xMean)).attr('y2', innerH)
-    .attr('stroke', '#ccc').attr('stroke-width', 1).attr('stroke-dasharray', '4,4')
+  const overExtend = 2000
 
-  // 水平軸線（通過 yMean）
+  // 垂直軸線（通過 xCenter）
   axisGroup.append('line')
-    .attr('x1', 0).attr('y1', yScale(yMean))
-    .attr('x2', innerW).attr('y2', yScale(yMean))
-    .attr('stroke', '#ccc').attr('stroke-width', 1).attr('stroke-dasharray', '4,4')
+    .attr('x1', xScale(xCenter)).attr('y1', -overExtend)
+    .attr('x2', xScale(xCenter)).attr('y2', innerH + overExtend)
+    .attr('stroke', '#aaa').attr('stroke-width', 1).attr('stroke-dasharray', '6,4')
+
+  // 水平軸線（通過 yCenter）
+  axisGroup.append('line')
+    .attr('x1', -overExtend).attr('y1', yScale(yCenter))
+    .attr('x2', innerW + overExtend).attr('y2', yScale(yCenter))
+    .attr('stroke', '#aaa').attr('stroke-width', 1).attr('stroke-dasharray', '6,4')
+
+  // ─── D3 刻度軸（帶偏移，避免和節點重疊）───
+
+  // X 軸刻度（畫在 yCenter 水平線上，文字大幅偏移到下方）
+  const xAxis = d3.axisBottom(xScale).ticks(8).tickSize(16).tickPadding(12)
+  const xAxisG = axisGroup.append('g')
+    .attr('class', 'x-axis-ticks')
+    .attr('transform', `translate(0, ${yScale(yCenter)})`)
+    .call(xAxis)
+    .call(g => g.select('.domain').remove())
+    .call(g => g.selectAll('.tick line').attr('stroke', '#bbb').attr('stroke-opacity', 0.6))
+    .call(g => g.selectAll('.tick text')
+      .attr('fill', '#888')
+      .attr('font-size', '10px')
+      .attr('font-family', "'Inter', system-ui, sans-serif"))
+
+  // 為 X 軸刻度文字加白色背景
+  xAxisG.selectAll('.tick text').each(function () {
+    const text = d3.select(this)
+    const bbox = this.getBBox()
+    const tick = d3.select(this.parentNode)
+    tick.insert('rect', 'text')
+      .attr('x', bbox.x - 2)
+      .attr('y', bbox.y - 1)
+      .attr('width', bbox.width + 4)
+      .attr('height', bbox.height + 2)
+      .attr('fill', 'white')
+      .attr('fill-opacity', 0.9)
+      .attr('rx', 2)
+  })
+
+  // Y 軸刻度（畫在 xCenter 垂直線上，文字大幅偏移到左邊）
+  const yAxis = d3.axisLeft(yScale).ticks(8).tickSize(16).tickPadding(12)
+  const yAxisG = axisGroup.append('g')
+    .attr('class', 'y-axis-ticks')
+    .attr('transform', `translate(${xScale(xCenter)}, 0)`)
+    .call(yAxis)
+    .call(g => g.select('.domain').remove())
+    .call(g => g.selectAll('.tick line').attr('stroke', '#bbb').attr('stroke-opacity', 0.6))
+    .call(g => g.selectAll('.tick text')
+      .attr('fill', '#888')
+      .attr('font-size', '10px')
+      .attr('font-family', "'Inter', system-ui, sans-serif"))
+
+  // 為 Y 軸刻度文字加白色背景
+  yAxisG.selectAll('.tick text').each(function () {
+    const text = d3.select(this)
+    const bbox = this.getBBox()
+    const tick = d3.select(this.parentNode)
+    tick.insert('rect', 'text')
+      .attr('x', bbox.x - 2)
+      .attr('y', bbox.y - 1)
+      .attr('width', bbox.width + 4)
+      .attr('height', bbox.height + 2)
+      .attr('fill', 'white')
+      .attr('fill-opacity', 0.9)
+      .attr('rx', 2)
+  })
+
+  // ─── 軸標籤（來自 Settings 工作表）───
+  if (settings.XAxisLabel) {
+    axisGroup.append('text')
+      .attr('x', innerW + 5)
+      .attr('y', yScale(yCenter) - 14)
+      .attr('text-anchor', 'end')
+      .attr('font-size', '13px')
+      .attr('font-weight', 'bold')
+      .attr('font-family', "'Inter', system-ui, sans-serif")
+      .attr('fill', '#777')
+      .text(settings.XAxisLabel + ' →')
+  }
+
+  if (settings.YAxisLabel) {
+    axisGroup.append('text')
+      .attr('x', xScale(xCenter) + 14)
+      .attr('y', -8)
+      .attr('text-anchor', 'start')
+      .attr('font-size', '13px')
+      .attr('font-weight', 'bold')
+      .attr('font-family', "'Inter', system-ui, sans-serif")
+      .attr('fill', '#777')
+      .text('↑ ' + settings.YAxisLabel)
+  }
 
   // ─── 分群包絡線（Convex Hull）───
   const hullGroup = g.append('g').attr('class', 'hulls')
@@ -115,6 +222,41 @@ export function renderChart(svgEl, data, width, height) {
       .attr('stroke-dasharray', link.Type === 'dashed' ? '6,3' : 'none')
   })
 
+  // ─── 連線標籤（選填 Label）───
+  const linkLabelGroup = g.append('g').attr('class', 'link-labels')
+
+  links.forEach(link => {
+    if (!link.Label) return
+    const source = nodeMap.get(link.Source)
+    const target = nodeMap.get(link.Target)
+    if (!source || !target) return
+
+    const mx = (xScale(+source.X) + xScale(+target.X)) / 2
+    const my = (yScale(+source.Y) + yScale(+target.Y)) / 2
+
+    // 白色背景矩形（先加，讓文字覆蓋在上面）
+    const labelText = linkLabelGroup.append('text')
+      .attr('x', mx)
+      .attr('y', my)
+      .attr('text-anchor', 'middle')
+      .attr('dominant-baseline', 'middle')
+      .attr('font-size', '11px')
+      .attr('font-family', "'Inter', system-ui, sans-serif")
+      .attr('fill', '#666')
+      .text(link.Label)
+
+    // 取得文字邊界框來畫背景
+    const bbox = labelText.node().getBBox()
+    linkLabelGroup.insert('rect', 'text')
+      .attr('x', bbox.x - 3)
+      .attr('y', bbox.y - 1)
+      .attr('width', bbox.width + 6)
+      .attr('height', bbox.height + 2)
+      .attr('fill', 'white')
+      .attr('fill-opacity', 0.85)
+      .attr('rx', 2)
+  })
+
   // ─── 節點 ───
   const nodeGroup = g.append('g').attr('class', 'nodes')
 
@@ -141,7 +283,7 @@ export function renderChart(svgEl, data, width, height) {
   const simulation = d3.forceSimulation(labelData)
     .force('x', d3.forceX(d => xScale(+d.X)).strength(0.8))
     .force('y', d3.forceY(d => yScale(+d.Y) - d.r - 8).strength(0.8))
-    .force('collide', d3.forceCollide(12))
+    .force('collide', d3.forceCollide(16))
     .stop()
 
   // 手動推進模擬
@@ -155,13 +297,13 @@ export function renderChart(svgEl, data, width, height) {
     .attr('x', d => d.x)
     .attr('y', d => d.y)
     .attr('text-anchor', 'middle')
-    .attr('font-size', '11px')
+    .attr('font-size', '14px')
     .attr('font-family', "'Inter', system-ui, sans-serif")
     .attr('fill', '#333')
     .text(d => d.Name)
 
   // ─── 圖例 ───
-  const legend = svg.append('g')
+  const legend = zoomG.append('g')
     .attr('class', 'legend')
     .attr('transform', `translate(${width - margin.right - 120}, ${margin.top})`)
 
@@ -176,8 +318,8 @@ export function renderChart(svgEl, data, width, height) {
 
     legendItem.append('text')
       .attr('x', 14)
-      .attr('y', 4)
-      .attr('font-size', '11px')
+      .attr('y', 5)
+      .attr('font-size', '13px')
       .attr('font-family', "'Inter', system-ui, sans-serif")
       .attr('fill', '#555')
       .text(group)

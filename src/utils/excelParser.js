@@ -1,9 +1,9 @@
 import * as XLSX from 'xlsx'
 
 /**
- * 解析上傳的 Excel 檔案，提取 Nodes 與 Links 工作表。
+ * 解析上傳的 Excel 檔案，提取 Nodes、Links 與 Settings 工作表。
  * @param {File} file - 使用者上傳的 .xlsx/.xls 檔案
- * @returns {Promise<{nodes: Array, links: Array}>}
+ * @returns {Promise<{nodes: Array, links: Array, settings: Object}>}
  */
 export async function parseExcel(file) {
   const buffer = await file.arrayBuffer()
@@ -23,6 +23,18 @@ export async function parseExcel(file) {
 
   const nodes = XLSX.utils.sheet_to_json(nodesSheet)
   const links = XLSX.utils.sheet_to_json(linksSheet)
+
+  // 取得 Settings 工作表（選填，沒有也不報錯）
+  const settings = {}
+  const settingsSheet = workbook.Sheets['Settings']
+  if (settingsSheet) {
+    const settingsRows = XLSX.utils.sheet_to_json(settingsSheet)
+    settingsRows.forEach(row => {
+      if (row.Key && row.Value !== undefined) {
+        settings[row.Key] = row.Value
+      }
+    })
+  }
 
   // 驗證必要欄位
   const requiredNodeFields = ['Name', 'X', 'Y', 'Size', 'Group']
@@ -44,5 +56,5 @@ export async function parseExcel(file) {
     }
   }
 
-  return { nodes, links }
+  return { nodes, links, settings }
 }

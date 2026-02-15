@@ -1,17 +1,29 @@
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useState, useCallback } from 'react'
 import { renderChart } from '../utils/renderChart'
 import { exportSVG } from '../utils/exportSVG'
+import Guide from './Guide'
 
 export default function Canvas({ data }) {
   const svgRef = useRef(null)
   const containerRef = useRef(null)
+  const [showAxes, setShowAxes] = useState(false)
 
+  // 只在 data 變化時重新渲染圖表（不受 showAxes 影響）
   useEffect(() => {
     if (!data || !svgRef.current || !containerRef.current) return
 
     const { width, height } = containerRef.current.getBoundingClientRect()
     renderChart(svgRef.current, data, width, height)
   }, [data])
+
+  // 切換象限：直接操作 DOM display，不重繪圖表
+  useEffect(() => {
+    if (!svgRef.current) return
+    const axesLayer = svgRef.current.querySelector('.axes-layer')
+    if (axesLayer) {
+      axesLayer.setAttribute('display', showAxes ? 'inline' : 'none')
+    }
+  }, [showAxes, data])
 
   const handleExport = () => {
     if (!svgRef.current) return
@@ -22,14 +34,33 @@ export default function Canvas({ data }) {
     <main ref={containerRef} className="flex-1 flex flex-col bg-white">
       {/* 工具列 */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 bg-gray-50">
-        <span className="text-sm text-gray-600">畫布預覽</span>
-        <button
-          onClick={handleExport}
-          disabled={!data}
-          className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-        >
-          匯出 SVG
-        </button>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-gray-600">畫布預覽</span>
+          {data && (
+            <span className="text-xs text-gray-400">滾輪縮放 · 拖曳平移 · 雙擊重置</span>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <Guide />
+          <button
+            onClick={() => setShowAxes(v => !v)}
+            disabled={!data}
+            className={`px-3 py-1.5 text-sm border rounded-md transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+              showAxes
+                ? 'bg-gray-700 text-white border-gray-700'
+                : 'border-gray-300 text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            {showAxes ? '隱藏象限' : '顯示象限'}
+          </button>
+          <button
+            onClick={handleExport}
+            disabled={!data}
+            className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            匯出 SVG
+          </button>
+        </div>
       </div>
 
       {/* SVG 畫布 */}

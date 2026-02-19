@@ -16,7 +16,7 @@ export default function Canvas({ data }) {
     renderChart(svgRef.current, data, width, height)
   }, [data])
 
-  // 切換象限：直接操作 DOM display，不重繪圖表
+  // 切換座標軸：直接操作 DOM display，不重繪圖表
   useEffect(() => {
     if (!svgRef.current) return
     const axesLayer = svgRef.current.querySelector('.axes-layer')
@@ -31,7 +31,7 @@ export default function Canvas({ data }) {
   }
 
   return (
-    <main ref={containerRef} className="flex-1 flex flex-col bg-white">
+    <main className="flex-1 flex flex-col bg-white">
       {/* 工具列 */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 bg-gray-50">
         <div className="flex items-center gap-3">
@@ -51,7 +51,7 @@ export default function Canvas({ data }) {
                 : 'border-gray-300 text-gray-600 hover:bg-gray-100'
             }`}
           >
-            {showAxes ? '隱藏象限' : '顯示象限'}
+            {showAxes ? '隱藏座標軸' : '顯示座標軸'}
           </button>
           <button
             onClick={handleExport}
@@ -64,7 +64,7 @@ export default function Canvas({ data }) {
       </div>
 
       {/* SVG 畫布 */}
-      <div className="flex-1 relative overflow-hidden">
+      <div ref={containerRef} className="flex-1 relative overflow-hidden">
         {data ? (
           <svg ref={svgRef} className="w-full h-full" />
         ) : (

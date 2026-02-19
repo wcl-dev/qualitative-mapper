@@ -41,7 +41,7 @@ export default function Guide() {
               <p className="text-gray-500">
                 請上傳包含 <strong>Nodes</strong> 與 <strong>Links</strong> 兩個工作表（Sheet）的 Excel 檔案（.xlsx）。
                 可選擇性加入 <strong>Settings</strong> 工作表來定義軸標籤。
-                以下說明每個欄位如何對應到圖表中的視覺變項。
+                座標軸採第一象限（原點 0,0 在左下角），可切換顯示或隱藏。
               </p>
 
               {/* ── Nodes 工作表 ── */}
@@ -74,7 +74,7 @@ export default function Guide() {
                           節點的水平座標值
                           <span className="block text-xs text-amber-600 mt-0.5">建議範圍：0 ~ 10</span>
                         </td>
-                        <td className="px-4 py-2.5 text-gray-600">決定節點在畫布上的<strong>水平位置</strong>（左 ↔ 右）</td>
+                        <td className="px-4 py-2.5 text-gray-600">決定節點在畫布上的<strong>水平位置</strong>（左 → 右）</td>
                       </tr>
                       <tr>
                         <td className="px-4 py-2.5 font-mono text-blue-700">Y</td>
@@ -83,7 +83,7 @@ export default function Guide() {
                           節點的垂直座標值
                           <span className="block text-xs text-amber-600 mt-0.5">建議範圍：0 ~ 10</span>
                         </td>
-                        <td className="px-4 py-2.5 text-gray-600">決定節點在畫布上的<strong>垂直位置</strong>（下 ↔ 上）</td>
+                        <td className="px-4 py-2.5 text-gray-600">決定節點在畫布上的<strong>垂直位置</strong>（下 → 上）</td>
                       </tr>
                       <tr>
                         <td className="px-4 py-2.5 font-mono text-blue-700">Size</td>
@@ -97,9 +97,14 @@ export default function Guide() {
                       <tr>
                         <td className="px-4 py-2.5 font-mono text-blue-700">Group</td>
                         <td className="px-4 py-2.5 text-gray-500">文字</td>
-                        <td className="px-4 py-2.5">節點所屬分群名稱</td>
+                        <td className="px-4 py-2.5">
+                          節點所屬分群名稱
+                          <span className="block text-xs text-green-600 mt-0.5">
+                            支援多群組：填入 JSON 陣列如 <code className="bg-gray-100 px-1 rounded">["政府","漁夫"]</code>
+                          </span>
+                        </td>
                         <td className="px-4 py-2.5 text-gray-600">
-                          決定節點的<strong>顏色</strong>，同組節點會被半透明的<strong>包絡線（泡泡）</strong>圈起來
+                          決定節點的<strong>顏色</strong>；多群組時以<strong>扇形色塊併陳</strong>。同組節點會被半透明的<strong>包絡線</strong>圈起來
                         </td>
                       </tr>
                     </tbody>
@@ -161,7 +166,7 @@ export default function Guide() {
                           <span className="block text-xs text-green-600">選填</span>
                         </td>
                         <td className="px-4 py-2.5">連線的關係描述</td>
-                        <td className="px-4 py-2.5 text-gray-600">顯示在連線中點的<strong>文字標籤</strong>（如「供貨」「監管」）；未填則不顯示</td>
+                        <td className="px-4 py-2.5 text-gray-600">顯示在連線弧線中點的<strong>文字標籤</strong>；同對節點的多條連線自動以弧線分散</td>
                       </tr>
                     </tbody>
                   </table>
@@ -175,7 +180,7 @@ export default function Guide() {
                   Settings 工作表（選填）
                 </h3>
                 <p className="text-xs text-gray-500 mb-2">
-                  用來定義軸標籤名稱與象限交叉點位置。此工作表為選填，沒有也不會報錯。
+                  用來定義座標軸標籤名稱。此工作表為選填，沒有也不會報錯。
                 </p>
                 <div className="border border-gray-200 rounded-lg overflow-hidden">
                   <table className="w-full text-left">
@@ -190,28 +195,12 @@ export default function Guide() {
                       <tr>
                         <td className="px-4 py-2.5 font-mono text-teal-700">XAxisLabel</td>
                         <td className="px-4 py-2.5 text-gray-500">供應鏈位置</td>
-                        <td className="px-4 py-2.5">顯示在水平軸線右端的<strong>軸標籤</strong></td>
+                        <td className="px-4 py-2.5">顯示在 X 軸（底部）右端的<strong>軸標籤</strong></td>
                       </tr>
                       <tr>
                         <td className="px-4 py-2.5 font-mono text-teal-700">YAxisLabel</td>
                         <td className="px-4 py-2.5 text-gray-500">影響力</td>
-                        <td className="px-4 py-2.5">顯示在垂直軸線上端的<strong>軸標籤</strong></td>
-                      </tr>
-                      <tr>
-                        <td className="px-4 py-2.5 font-mono text-teal-700">XAxisCenter</td>
-                        <td className="px-4 py-2.5 text-gray-500">3</td>
-                        <td className="px-4 py-2.5">
-                          象限 X 軸交叉點的數值座標
-                          <span className="block text-xs text-green-600 mt-0.5">選填，預設為 0</span>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td className="px-4 py-2.5 font-mono text-teal-700">YAxisCenter</td>
-                        <td className="px-4 py-2.5 text-gray-500">2.5</td>
-                        <td className="px-4 py-2.5">
-                          象限 Y 軸交叉點的數值座標
-                          <span className="block text-xs text-green-600 mt-0.5">選填，預設為 0</span>
-                        </td>
+                        <td className="px-4 py-2.5">顯示在 Y 軸（左側）上端的<strong>軸標籤</strong></td>
                       </tr>
                     </tbody>
                   </table>
@@ -248,15 +237,15 @@ export default function Guide() {
                 </h3>
                 <div className="grid grid-cols-2 gap-3">
                   {[
-                    { field: 'X / Y', visual: '節點位置', desc: '座標會自動縮放至畫布範圍，軸線交會於所有節點的平均值（中心點）' },
+                    { field: 'X / Y', visual: '節點位置', desc: '第一象限座標，原點 (0,0) 在左下角' },
                     { field: 'Size', visual: '節點大小', desc: '使用面積比例映射（√），避免大數值過度放大' },
-                    { field: 'Group', visual: '顏色 + 包絡線', desc: '同組節點同色，且被半透明泡泡（Convex Hull）圈住' },
+                    { field: 'Group', visual: '顏色 + 包絡線', desc: '同組節點同色，多群組以扇形併陳；同組節點被半透明泡泡圈住' },
                     { field: 'Strength', visual: '連線粗細', desc: '線性映射，強度越高線越粗' },
                     { field: 'Type', visual: '線條樣式', desc: 'solid = 實線，dashed = 虛線' },
-                    { field: 'Label', visual: '連線文字', desc: '選填，顯示在連線中點，描述關係含義' },
-                    { field: 'Name', visual: '文字標籤', desc: '自動防碰撞排列，避免密集處重疊' },
-                    { field: 'XAxisLabel', visual: 'X 軸名稱', desc: 'Settings 工作表定義，顯示在水平軸右端' },
-                    { field: 'YAxisLabel', visual: 'Y 軸名稱', desc: 'Settings 工作表定義，顯示在垂直軸上端' },
+                    { field: 'Label', visual: '連線文字', desc: '選填，顯示在弧線中點；同對節點的多條線自動弧形分散' },
+                    { field: 'Name', visual: '文字標籤', desc: '自動防碰撞排列，白色背景提升可讀性' },
+                    { field: 'XAxisLabel', visual: 'X 軸名稱', desc: 'Settings 定義，顯示在底部軸右端' },
+                    { field: 'YAxisLabel', visual: 'Y 軸名稱', desc: 'Settings 定義，顯示在左側軸上端' },
                   ].map(({ field, visual, desc }) => (
                     <div key={field} className="border border-gray-200 rounded-lg p-3 bg-gray-50">
                       <div className="flex items-center gap-2 mb-1">
@@ -293,7 +282,7 @@ export default function Guide() {
                         <tbody className="divide-y divide-gray-100">
                           <tr><td className="px-3 py-1">遠洋漁船船長</td><td className="px-3 py-1">1.0</td><td className="px-3 py-1">4.5</td><td className="px-3 py-1">8</td><td className="px-3 py-1">漁夫</td></tr>
                           <tr><td className="px-3 py-1">批發商</td><td className="px-3 py-1">3.2</td><td className="px-3 py-1">3.2</td><td className="px-3 py-1">8</td><td className="px-3 py-1">盤商</td></tr>
-                          <tr><td className="px-3 py-1">一般消費者</td><td className="px-3 py-1">6.0</td><td className="px-3 py-1">3.5</td><td className="px-3 py-1">9</td><td className="px-3 py-1">顧客</td></tr>
+                          <tr><td className="px-3 py-1">地方漁會</td><td className="px-3 py-1">2.0</td><td className="px-3 py-1">1.5</td><td className="px-3 py-1">5</td><td className="px-3 py-1">["政府","漁夫"]</td></tr>
                         </tbody>
                       </table>
                     </div>
@@ -331,8 +320,6 @@ export default function Guide() {
                         <tbody className="divide-y divide-gray-100">
                           <tr><td className="px-3 py-1">XAxisLabel</td><td className="px-3 py-1">供應鏈位置</td></tr>
                           <tr><td className="px-3 py-1">YAxisLabel</td><td className="px-3 py-1">影響力</td></tr>
-                          <tr><td className="px-3 py-1">XAxisCenter</td><td className="px-3 py-1">3</td></tr>
-                          <tr><td className="px-3 py-1">YAxisCenter</td><td className="px-3 py-1">2.5</td></tr>
                         </tbody>
                       </table>
                     </div>

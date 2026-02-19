@@ -1,6 +1,61 @@
 import { useCallback } from 'react'
 import { parseExcel } from '../utils/excelParser'
 
+function CellValue({ value }) {
+  if (value == null) return null
+  const str = String(value).trim()
+  if (str.startsWith('[')) {
+    try {
+      const arr = JSON.parse(str)
+      if (Array.isArray(arr)) {
+        return (
+          <span className="flex flex-wrap gap-0.5">
+            {arr.map((item, i) => (
+              <span
+                key={i}
+                className="inline-block bg-indigo-50 text-indigo-700 rounded px-1 text-[10px] leading-tight"
+              >
+                {item}
+              </span>
+            ))}
+          </span>
+        )
+      }
+    } catch (_) { /* not JSON */ }
+  }
+  return <>{str}</>
+}
+
+function DataTable({ rows }) {
+  if (!rows || rows.length === 0) return null
+  const columns = Object.keys(rows[0])
+
+  return (
+    <div className="max-h-40 overflow-auto border border-gray-200 rounded text-xs">
+      <table className="min-w-full whitespace-nowrap">
+        <thead className="bg-gray-50 sticky top-0">
+          <tr>
+            {columns.map(col => (
+              <th key={col} className="px-2 py-1 text-left">{col}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, i) => (
+            <tr key={i} className="border-t border-gray-100">
+              {columns.map(col => (
+                <td key={col} className="px-2 py-1">
+                  <CellValue value={row[col]} />
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
 export default function Sidebar({ data, onDataLoaded }) {
   const handleFileUpload = useCallback(async (e) => {
     const file = e.target.files[0]
@@ -64,75 +119,22 @@ export default function Sidebar({ data, onDataLoaded }) {
               <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
                 Nodes ({data.nodes.length})
               </h3>
-              <div className="max-h-40 overflow-auto border border-gray-200 rounded text-xs">
-                <table className="w-full">
-                  <thead className="bg-gray-50 sticky top-0">
-                    <tr>
-                      <th className="px-2 py-1 text-left">Name</th>
-                      <th className="px-2 py-1 text-left">Group</th>
-                      <th className="px-2 py-1 text-right">Size</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.nodes.map((node, i) => (
-                      <tr key={i} className="border-t border-gray-100">
-                        <td className="px-2 py-1">{node.Name}</td>
-                        <td className="px-2 py-1">{node.Group}</td>
-                        <td className="px-2 py-1 text-right">{node.Size}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <DataTable rows={data.nodes} />
             </div>
             <div className="mb-3">
               <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
                 Links ({data.links.length})
               </h3>
-              <div className="max-h-40 overflow-auto border border-gray-200 rounded text-xs">
-                <table className="w-full">
-                  <thead className="bg-gray-50 sticky top-0">
-                    <tr>
-                      <th className="px-2 py-1 text-left">Source</th>
-                      <th className="px-2 py-1 text-left">Target</th>
-                      <th className="px-2 py-1 text-right">Strength</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.links.map((link, i) => (
-                      <tr key={i} className="border-t border-gray-100">
-                        <td className="px-2 py-1">{link.Source}</td>
-                        <td className="px-2 py-1">{link.Target}</td>
-                        <td className="px-2 py-1 text-right">{link.Strength}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <DataTable rows={data.links} />
             </div>
             {data.settings && Object.keys(data.settings).length > 0 && (
               <div>
                 <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
                   Settings ({Object.keys(data.settings).length})
                 </h3>
-                <div className="border border-gray-200 rounded text-xs">
-                  <table className="w-full">
-                    <thead className="bg-gray-50 sticky top-0">
-                      <tr>
-                        <th className="px-2 py-1 text-left">Key</th>
-                        <th className="px-2 py-1 text-left">Value</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {Object.entries(data.settings).map(([key, value]) => (
-                        <tr key={key} className="border-t border-gray-100">
-                          <td className="px-2 py-1 font-mono text-teal-700">{key}</td>
-                          <td className="px-2 py-1">{value}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <DataTable
+                  rows={Object.entries(data.settings).map(([key, value]) => ({ Key: key, Value: value }))}
+                />
               </div>
             )}
           </div>

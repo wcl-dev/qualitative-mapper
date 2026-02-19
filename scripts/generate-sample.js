@@ -17,10 +17,11 @@ const nodes = [
   // 消費端
   { Name: '一般消費者',   X: 6.0, Y: 3.5, Size: 9, Group: '顧客' },
   { Name: '觀光客',       X: 6.2, Y: 2.8, Size: 4, Group: '顧客' },
-  // 政府
+  // 政府／跨組織
   { Name: '漁業署',       X: 3.0, Y: 1.0, Size: 7, Group: '政府' },
   { Name: '食藥署',       X: 4.0, Y: 0.8, Size: 6, Group: '政府' },
-  { Name: '地方漁會',     X: 2.0, Y: 1.5, Size: 5, Group: '政府' },
+  { Name: '地方漁會',     X: 2.0, Y: 1.5, Size: 5, Group: '["政府","漁夫"]' },
+  { Name: '產銷履歷中心', X: 3.8, Y: 1.8, Size: 4, Group: '["政府","市場通路"]' },
 ]
 
 const links = [
@@ -39,21 +40,20 @@ const links = [
   { Source: '超市量販店',   Target: '一般消費者',   Strength: 7, Type: 'solid',  Label: '銷售' },
   { Source: '傳統市場攤販', Target: '觀光客',       Strength: 4, Type: 'dashed' },
   { Source: '餐廳業者',     Target: '觀光客',       Strength: 5, Type: 'solid',  Label: '餐飲服務' },
-  // 政府監管（虛線表示監管關係）
+  // 政府監管（虛線）
   { Source: '漁業署',       Target: '遠洋漁船船長', Strength: 6, Type: 'dashed', Label: '發照監管' },
   { Source: '漁業署',       Target: '近海漁民',     Strength: 5, Type: 'dashed', Label: '漁業規範' },
   { Source: '食藥署',       Target: '超市量販店',   Strength: 4, Type: 'dashed', Label: '食安稽查' },
   { Source: '食藥署',       Target: '餐廳業者',     Strength: 4, Type: 'dashed', Label: '衛生檢查' },
   { Source: '地方漁會',     Target: '近海漁民',     Strength: 5, Type: 'dashed', Label: '輔導' },
   { Source: '地方漁會',     Target: '養殖戶',       Strength: 4, Type: 'dashed', Label: '技術支援' },
+  { Source: '產銷履歷中心', Target: '超市量販店',   Strength: 3, Type: 'dashed', Label: '履歷認證' },
 ]
 
-// ── Settings ──
+// ── Settings（僅保留軸標籤，座標軸從 0 起算）──
 const settingsData = [
   { Key: 'XAxisLabel', Value: '供應鏈位置' },
   { Key: 'YAxisLabel', Value: '影響力' },
-  { Key: 'XAxisCenter', Value: 3 },
-  { Key: 'YAxisCenter', Value: 2.5 },
 ]
 
 // ── 建立 Excel ──
